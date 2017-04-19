@@ -1,0 +1,6 @@
+---
+- hosts: gluster
+  tasks:
+  - include: tasks/system.yaml
+  - include: tasks/gluster-bricks.yaml
+  - include: tasks/gluster-server.yaml

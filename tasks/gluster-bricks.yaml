@@ -1,0 +1,59 @@
+- name: Test if LVM is already created
+  shell: lsblk -o NAME,TYPE | grep lvm | grep brick
+  args:
+    executable: /bin/bash
+  register: lvm_exists
+  ignore_errors: yes
+
+
+- name: Select disk to prepare
+  shell: lsblk -o NAME,SIZE,TYPE | grep disk | grep '10G' | cut -d' ' -f1
+  args:
+    executable: /bin/bash
+  register: brick_disk
+
+
+- name: Disk prepared for brick
+  debug:
+    msg: "{{ brick_disk.stdout }}"
+
+
+- name: Create partition on brick disk {{ brick_disk.stdout }}
+  shell: echo -e "n\np\n1\n\n\nw" | sudo fdisk /dev/{{ brick_disk.stdout }}
+  args:
+    executable: /bin/bash
+  when: lvm_exists.stdout == ""
+
+
+- name: Create Volume Group vg_gluster with /dev/{{ brick_disk.stdout }}1
+  lvg:
+    vg: vg_gluster
+    pvs: /dev/{{ brick_disk.stdout }}1
+    state: present
+  when: lvm_exists.stdout == ""
+  
+
+- name: Create Logical Volume lv_brick1 on vg_gluster
+  lvol:
+    vg: vg_gluster
+    lv: lv_brick1
+    size: 100%FREE
+    state: present
+    active: yes
+  when: lvm_exists.stdout == ""
+
+
+- name: Create filesystem xfs on lvm
+  filesystem:
+    fstype: xfs
+    dev: /dev/vg_gluster/lv_brick1
+  when: lvm_exists.stdout == ""
+  
+
+- name: Add brick to /etc/fstab
+  mount:
+    name: /bricks/brick1
+    src: /dev/vg_gluster/lv_brick1
+    fstype: xfs
+    state: mounted
+    

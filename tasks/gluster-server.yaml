@@ -1,0 +1,24 @@
+- name: Configure Gluster repository
+  yum:
+    name=centos-release-gluster310
+    state=latest
+
+
+- name: Install Gluster Server Packages
+  yum:
+    name="{{ item }}"
+    update_cache=yes
+    state=latest
+  with_items:
+    - glusterfs
+    - glusterfs-cli
+    - glusterfs-libs
+    - glusterfs-server
+
+
+- name: Enable and start Gluster Service
+  systemd:
+    name: glusterd.service
+    enabled: yes
+    state: started
+    

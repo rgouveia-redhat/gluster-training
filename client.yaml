@@ -1,0 +1,5 @@
+---
+- hosts: gcli
+  tasks:
+  - include: tasks/system.yaml
+  - include: tasks/gluster-client.yaml
